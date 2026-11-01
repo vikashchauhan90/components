@@ -1,3 +1,9 @@
 <Solution>
-  <Project Path="src/result/Jnvp.Platform.Results/Jnvp.Platform.Results.csproj" Id="2e769b69-f5c3-4b33-a79e-abbe1f09d31f" />
+  <Folder Name="/src/" />
+  <Folder Name="/src/observability/">
+    <Project Path="src/observability/Jnvp.Platform.Observability/Jnvp.Platform.Observability.csproj" Id="973e39e9-3ac4-4dbc-a624-e9f87b5ff49f" />
+  </Folder>
+  <Folder Name="/src/results/">
+    <Project Path="src/result/Jnvp.Platform.Results/Jnvp.Platform.Results.csproj" Id="2e769b69-f5c3-4b33-a79e-abbe1f09d31f" />
+  </Folder>
 </Solution>
