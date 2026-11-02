@@ -2,10 +2,18 @@
 
 namespace Jnvp.Platform.Observability.Compliance.Redactors;
 
+/// <summary>Masks an IPv4 address's final two octets; other address forms are replaced with a fixed mask.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+/// // Mark the model property with [IpAddress] to apply this redactor.
+/// </code>
+/// </example>
 public sealed class IpAddressRedactor : Redactor
 {
     private const string Mask = "****";
 
+    /// <inheritdoc />
     public override int GetRedactedLength(
         ReadOnlySpan<char> input)
     {
@@ -30,6 +38,7 @@ public sealed class IpAddressRedactor : Redactor
         };
     }
 
+    /// <inheritdoc />
     public override int Redact(
         ReadOnlySpan<char> source,
         Span<char> destination)

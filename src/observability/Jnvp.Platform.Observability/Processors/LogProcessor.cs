@@ -4,6 +4,17 @@ using OpenTelemetry.Logs;
 
 namespace Jnvp.Platform.Observability.Processors;
 
+/// <summary>Adds a configured prefix to log attribute names while preserving the original format attribute.</summary>
+/// <example>
+/// <code language="csharp">
+/// using Jnvp.Platform.Observability.Processors;
+///
+/// services.AddLogProcessorService(configuration.GetSection("Logging:Processor"));
+/// builder.Logging.AddOpenTelemetry(options =>
+///     options.AddProcessor(serviceProvider =&gt;
+///         serviceProvider.GetRequiredService&lt;LogProcessor&gt;()));
+/// </code>
+/// </example>
 public sealed class LogProcessor : BaseProcessor<LogRecord>
 {
     private const char PrefixSeparator = '.';
@@ -11,6 +22,7 @@ public sealed class LogProcessor : BaseProcessor<LogRecord>
 
     private readonly LogProcessorOptions _options;
 
+    /// <summary>Initializes the processor with configured log attribute options.</summary>
     public LogProcessor(IOptions<LogProcessorOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -18,6 +30,7 @@ public sealed class LogProcessor : BaseProcessor<LogRecord>
         _options = options.Value;
     }
 
+    /// <summary>Prefixes the attributes on a completed log record.</summary>
     public override void OnEnd(LogRecord logRecord)
     {
         ArgumentNullException.ThrowIfNull(logRecord);

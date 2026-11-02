@@ -2,8 +2,16 @@
 
 namespace Jnvp.Platform.Results;
 
+/// <summary>Provides HTTP and display metadata for <see cref="ErrorType"/> values.</summary>
+/// <example>
+/// <code language="csharp">
+/// var status = ErrorType.NotFound.ToHttpStatusCode();
+/// var code = ErrorType.NotFound.GetCode();
+/// </code>
+/// </example>
 public static class ErrorTypeExtensions
 {
+    /// <summary>Gets the stable machine-readable code for an error category.</summary>
     public static string GetCode(this ErrorType errorType) =>
         errorType switch
         {
@@ -28,6 +36,7 @@ public static class ErrorTypeExtensions
             _ => string.Empty
         };
 
+    /// <summary>Gets the default human-readable message for an error category.</summary>
     public static string GetDefaultMessage(this ErrorType errorType) =>
     errorType switch
     {
@@ -53,6 +62,7 @@ public static class ErrorTypeExtensions
     };
 
 
+    /// <summary>Maps an error category to its HTTP status code when one is defined.</summary>
     public static HttpStatusCode? ToHttpStatusCode(this ErrorType errorType) =>
      errorType switch
      {
@@ -77,6 +87,7 @@ public static class ErrorTypeExtensions
          _ => null
      };
 
+    /// <summary>Gets the canonical problem type URI for an error category.</summary>
     public static string GetProblemType(this ErrorType errorType)
     {
         return errorType switch
@@ -103,6 +114,7 @@ public static class ErrorTypeExtensions
         };
     }
 
+    /// <summary>Gets a display title for an HTTP status code.</summary>
     public static string GetErrorTitle(int statusCode)
     {
         return statusCode switch

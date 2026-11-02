@@ -2,10 +2,18 @@
 
 namespace Jnvp.Platform.Observability.Compliance.Redactors;
 
+/// <summary>Masks the middle of a phone value while retaining up to the first two and last two characters.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+/// // Mark the model property with [Phone] to apply this redactor.
+/// </code>
+/// </example>
 public sealed class PhoneRedactor : Redactor
 {
     private const string Mask = "******";
 
+    /// <inheritdoc />
     public override int GetRedactedLength(
         ReadOnlySpan<char> input)
     {
@@ -14,6 +22,7 @@ public sealed class PhoneRedactor : Redactor
             : 2 + Mask.Length + 2;
     }
 
+    /// <inheritdoc />
     public override int Redact(
         ReadOnlySpan<char> source,
         Span<char> destination)

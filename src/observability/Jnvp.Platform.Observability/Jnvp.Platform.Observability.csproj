@@ -4,6 +4,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>Jnvp.Platform.Observability</PackageId>
+    <Description>Application observability building blocks for OpenTelemetry logging, metrics, tracing, and classified-data redaction.</Description>
+    <PackageTags>observability;opentelemetry;logging;metrics;tracing;redaction</PackageTags>
+    <PackageProjectUrl>https://github.com/vikashchauhan90/components</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vikashchauhan90/components</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
 	<ItemGroup>
@@ -12,5 +20,9 @@
 		<PackageReference Include="OpenTelemetry" Version="1.20.1" />
 		<PackageReference Include="OpenTelemetry.Api" Version="1.20.1" />
 	</ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>

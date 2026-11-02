@@ -2,10 +2,18 @@
 
 namespace Jnvp.Platform.Observability.Compliance.Redactors;
 
+/// <summary>Partially masks each name component while retaining up to its first two characters.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+/// // Mark the model property with [Name] to apply this redactor.
+/// </code>
+/// </example>
 public sealed class NameRedactor : Redactor
 {
     private const string Mask = "***";
 
+    /// <inheritdoc />
     public override int GetRedactedLength(
         ReadOnlySpan<char> input)
     {
@@ -25,6 +33,7 @@ public sealed class NameRedactor : Redactor
         return length + Math.Max(0, parts.Length - 1);
     }
 
+    /// <inheritdoc />
     public override int Redact(
         ReadOnlySpan<char> source,
         Span<char> destination)

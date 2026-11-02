@@ -2,11 +2,19 @@
 
 namespace Jnvp.Platform.Observability.Compliance.Redactors;
 
+/// <summary>Masks the middle of an email's local part and preserves its domain when the local part is longer than three characters.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+/// // Mark the model property with [Email] to apply this redactor.
+/// </code>
+/// </example>
 public sealed class EmailRedactor : Redactor
 {
     private const string Mask = "****";
 
 
+    /// <inheritdoc />
     public override int GetRedactedLength(
         ReadOnlySpan<char> input)
     {
@@ -21,6 +29,7 @@ public sealed class EmailRedactor : Redactor
     }
 
 
+    /// <inheritdoc />
     public override int Redact(
         ReadOnlySpan<char> source,
         Span<char> destination)

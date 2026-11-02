@@ -4,6 +4,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>Jnvp.Platform.Results</PackageId>
+    <Description>Typed result and error primitives for representing application failures without exception-driven control flow.</Description>
+    <PackageTags>result;error-handling;functional</PackageTags>
+    <PackageProjectUrl>https://github.com/vikashchauhan90/components</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vikashchauhan90/components</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>

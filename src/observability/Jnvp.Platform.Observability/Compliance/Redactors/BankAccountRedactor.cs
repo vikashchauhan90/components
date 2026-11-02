@@ -2,16 +2,25 @@
 
 namespace Jnvp.Platform.Observability.Compliance.Redactors;
 
+/// <summary>Masks a bank-account value while retaining its final four characters when available.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+/// // Mark the model property with [BankAccount] to apply this redactor.
+/// </code>
+/// </example>
 public sealed class BankAccountRedactor : Redactor
 {
     private const char Mask = '*';
 
+    /// <inheritdoc />
     public override int GetRedactedLength(
         ReadOnlySpan<char> input)
     {
         return input.Length;
     }
 
+    /// <inheritdoc />
     public override int Redact(
         ReadOnlySpan<char> source,
         Span<char> destination)

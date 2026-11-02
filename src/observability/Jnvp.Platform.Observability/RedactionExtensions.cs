@@ -6,8 +6,24 @@ using Microsoft.Extensions.Logging;
 
 namespace Jnvp.Platform.Observability;
 
+/// <summary>Registers classification-aware redaction for platform security, personal, and financial data.</summary>
+/// <example>
+/// <code language="csharp">
+/// builder.Logging.AddPlatformRedaction();
+///
+/// public sealed class LoginEvent
+/// {
+///     [Email]
+///     public string EmailAddress { get; init; } = "";
+///
+///     [Password]
+///     public string Password { get; init; } = "";
+/// }
+/// </code>
+/// </example>
 public static class RedactionExtensions
 {
+    /// <summary>Enables redaction and maps platform data classifications to built-in redactors.</summary>
     public static ILoggingBuilder AddPlatformRedaction(
         this ILoggingBuilder loggingBuilder,
         Action<HmacRedactorOptions>? configureHmac = null)
@@ -56,4 +72,3 @@ public static class RedactionExtensions
         return loggingBuilder;
     }
 }
-

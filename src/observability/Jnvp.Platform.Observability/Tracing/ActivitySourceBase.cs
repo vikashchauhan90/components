@@ -3,11 +3,30 @@ using System.Diagnostics;
 
 namespace Jnvp.Platform.Observability.Tracing;
 
+/// <summary>
+/// Base class for an application-specific <see cref="ActivitySource"/> with lifecycle hooks and parent-context support.
+/// </summary>
+/// <example>
+/// <code language="csharp">
+/// public sealed class OrdersActivitySource : ActivitySourceBase
+/// {
+///     public OrdersActivitySource() : base("Contoso.Orders", "1.0.0") { }
+///
+///     public Activity? StartLoad(string orderId)
+///     {
+///         var activity = StartActivity("orders.load", ActivityKind.Internal);
+///         activity?.SetTag("order.id", orderId);
+///         return activity;
+///     }
+/// }
+/// </code>
+/// </example>
 public abstract class ActivitySourceBase : IDisposable
 {
     private readonly ActivitySource _activitySource;
     private int _disposed;
 
+    /// <summary>Initializes an activity source with its instrumentation name and optional version.</summary>
     protected ActivitySourceBase(
         string sourceName,
         string? version = null)
@@ -19,12 +38,16 @@ public abstract class ActivitySourceBase : IDisposable
             version);
     }
 
+    /// <summary>Gets the underlying source for derived instrumentation.</summary>
     protected ActivitySource ActivitySource => _activitySource;
 
+    /// <summary>Gets the name used to create the underlying activity source.</summary>
     public string Name => _activitySource.Name;
 
+    /// <summary>Gets whether any listener is interested in this activity source.</summary>
     public bool HasListeners() => _activitySource.HasListeners();
 
+    /// <summary>Starts an activity using the current activity as its parent, if present.</summary>
     public Activity? StartActivity(
         string activityName,
         ActivityKind kind = ActivityKind.Internal)
@@ -37,6 +60,7 @@ public abstract class ActivitySourceBase : IDisposable
             default);
     }
 
+    /// <summary>Starts an activity with an explicit parent activity context.</summary>
     public Activity? StartActivity(
         string activityName,
         ActivityKind kind,
@@ -50,6 +74,7 @@ public abstract class ActivitySourceBase : IDisposable
             parentContext);
     }
 
+    /// <summary>Starts an activity using a remote W3C trace-parent header.</summary>
     public Activity? StartRemote(
         string activityName,
         ActivityKind kind,
@@ -75,14 +100,17 @@ public abstract class ActivitySourceBase : IDisposable
             parentContext);
     }
 
+    /// <summary>Enriches a newly created activity before it is returned.</summary>
     protected virtual void Enrich(Activity activity)
     {
     }
 
+    /// <summary>Runs after an activity has been created and enriched.</summary>
     protected virtual void OnActivityStarted(Activity activity)
     {
     }
 
+    /// <summary>Provides an overridable extension point for derived types to handle activity-stop behavior.</summary>
     protected virtual void OnActivityStopped(Activity activity)
     {
     }
@@ -110,12 +138,14 @@ public abstract class ActivitySourceBase : IDisposable
         return activity;
     }
 
+    /// <summary>Disposes the activity source.</summary>
     public void Dispose()
     {
         Dispose(true);
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>Releases resources when called from the disposal pattern.</summary>
     protected virtual void Dispose(bool disposing)
     {
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
