@@ -1,4 +1,4 @@
-﻿namespace Jnvp.Platform.Observability.Compliance;
+﻿namespace Jnvp.Platform.Observability.Compliance.Attributes;
 
 public sealed class EmailAttribute()
     : PlatformDataClassificationAttribute(DataClassifications.Email);
