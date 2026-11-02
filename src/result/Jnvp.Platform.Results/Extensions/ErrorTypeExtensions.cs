@@ -27,6 +27,7 @@ public static class ErrorTypeExtensions
             ErrorType.UnsupportedMediaType => ErrorCodes.UnsupportedMediaType,
             ErrorType.UnprocessableEntity => ErrorCodes.UnprocessableEntity,
             ErrorType.TooManyRequests => ErrorCodes.TooManyRequests,
+            ErrorType.RequestCancelled => ErrorCodes.RequestCancelled,
             ErrorType.RequestTimeout => ErrorCodes.RequestTimeout,
             ErrorType.InternalServerError => ErrorCodes.InternalServerError,
             ErrorType.BadGateway => ErrorCodes.BadGateway,
@@ -52,6 +53,7 @@ public static class ErrorTypeExtensions
         ErrorType.UnsupportedMediaType => ErrorMessages.UnsupportedMediaType,
         ErrorType.UnprocessableEntity => ErrorMessages.UnprocessableEntity,
         ErrorType.TooManyRequests => ErrorMessages.TooManyRequests,
+        ErrorType.RequestCancelled => ErrorMessages.RequestCancelled,
         ErrorType.RequestTimeout => ErrorMessages.RequestTimeout,
         ErrorType.InternalServerError => ErrorMessages.InternalServerError,
         ErrorType.BadGateway => ErrorMessages.BadGateway,
@@ -78,6 +80,7 @@ public static class ErrorTypeExtensions
          ErrorType.UnsupportedMediaType => HttpStatusCode.UnsupportedMediaType,
          ErrorType.UnprocessableEntity => HttpStatusCode.UnprocessableEntity,
          ErrorType.TooManyRequests => HttpStatusCode.TooManyRequests,
+         ErrorType.RequestCancelled => HttpStatusCode.BadRequest,
          ErrorType.RequestTimeout => HttpStatusCode.RequestTimeout,
          ErrorType.InternalServerError => HttpStatusCode.InternalServerError,
          ErrorType.BadGateway => HttpStatusCode.BadGateway,
@@ -105,6 +108,7 @@ public static class ErrorTypeExtensions
             ErrorType.UnprocessableEntity => "https://httpstatuses.com/422",
             ErrorType.Locked => "https://httpstatuses.com/423",
             ErrorType.TooManyRequests => "https://httpstatuses.com/429",
+            ErrorType.RequestCancelled => "https://httpstatuses.com/499",
             ErrorType.InternalServerError => "https://httpstatuses.com/500",
             ErrorType.BadGateway => "https://httpstatuses.com/502",
             ErrorType.ServiceUnavailable => "https://httpstatuses.com/503",
@@ -187,6 +191,8 @@ public static class ErrorTypeExtensions
 
             431 =>
                 "Request Header Fields Too Large",
+            499 =>
+                "Client Closed Request",
 
             500 =>
                 "Internal Server Error",

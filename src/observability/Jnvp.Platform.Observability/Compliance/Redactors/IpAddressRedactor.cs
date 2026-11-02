@@ -31,11 +31,7 @@ public sealed class IpAddressRedactor : Redactor
             }
         }
 
-        return value.IndexOf(':') switch
-        {
-            > 0 => value[..value.IndexOf(':')].Length + 1 + Mask.Length,
-            _ => Mask.Length
-        };
+        return Mask.Length;
     }
 
     /// <inheritdoc />

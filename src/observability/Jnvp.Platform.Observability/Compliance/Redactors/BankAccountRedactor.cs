@@ -11,7 +11,6 @@ namespace Jnvp.Platform.Observability.Compliance.Redactors;
 /// </example>
 public sealed class BankAccountRedactor : Redactor
 {
-    private const char Mask = '*';
 
     /// <inheritdoc />
     public override int GetRedactedLength(
@@ -25,17 +24,7 @@ public sealed class BankAccountRedactor : Redactor
         ReadOnlySpan<char> source,
         Span<char> destination)
     {
-        if (source.Length <= 4)
-        {
-            destination.Fill(Mask);
-            return source.Length;
-        }
-
-        destination[..^4].Fill(Mask);
-
-        source[^4..]
-            .CopyTo(destination[^4..]);
-
-        return source.Length;
+        return DigitSuffixMaskingRedactor
+            .Redact(source, destination, visibleSuffixDigits: 4);
     }
 }

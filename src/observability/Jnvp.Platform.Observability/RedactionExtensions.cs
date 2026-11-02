@@ -48,8 +48,16 @@ public static class RedactionExtensions
             options.SetRedactor<FixedRedactor>(DataClassifications.ConnectionString);
 
             // Pseudonymized
-            options.SetRedactor<HmacRedactor>(DataClassifications.Sensitive);
-            options.SetRedactor<HmacRedactor>(DataClassifications.UserIdentifier);
+            if (configureHmac is not null)
+            {
+                options.SetRedactor<HmacRedactor>(DataClassifications.Sensitive);
+                options.SetRedactor<HmacRedactor>(DataClassifications.UserIdentifier);
+            }
+            else
+            {
+                options.SetRedactor<FixedRedactor>(DataClassifications.Sensitive);
+                options.SetRedactor<FixedRedactor>(DataClassifications.UserIdentifier);
+            }
 
             // Personal
             options.SetRedactor<EmailRedactor>(DataClassifications.Email);
