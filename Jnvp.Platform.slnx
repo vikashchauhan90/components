@@ -6,4 +6,7 @@
   <Folder Name="/src/results/">
     <Project Path="src/result/Jnvp.Platform.Results/Jnvp.Platform.Results.csproj" Id="2e769b69-f5c3-4b33-a79e-abbe1f09d31f" />
   </Folder>
+  <Folder Name="/src/serialization/">
+    <Project Path="src/serialization/Jnvp.Platform.Serialization/Jnvp.Platform.Serialization.csproj" Id="a5a5e44c-b7e7-40ae-931f-dca643befd2d" />
+  </Folder>
 </Solution>
