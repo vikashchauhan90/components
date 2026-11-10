@@ -1,0 +1,78 @@
+name: Pack and publish NuGet packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  publish:
+    name: Publish NuGet packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Prepare strong-name key
+        env:
+          STRONG_NAME_KEY_BASE64: ${{ secrets.STRONG_NAME_KEY_BASE64 }}
+        run: |
+          if [ -z "$STRONG_NAME_KEY_BASE64" ]; then
+            echo "STRONG_NAME_KEY_BASE64 secret is required." >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$STRONG_NAME_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/strong-name.snk"
+          test -s "$RUNNER_TEMP/strong-name.snk"
+
+      - name: Restore
+        run: dotnet restore Jnvp.Platform.slnx
+
+      - name: Build signed assemblies
+        run: >-
+          dotnet build Jnvp.Platform.slnx
+          --configuration Release
+          --no-restore
+          -p:StrongNameKeyFile="$RUNNER_TEMP/strong-name.snk"
+
+      - name: Pack Results
+        run: >-
+          dotnet pack src/result/Jnvp.Platform.Results/Jnvp.Platform.Results.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output nupkgs
+          -p:PackageVersion="${GITHUB_REF_NAME#v}"
+
+      - name: Pack Observability
+        run: >-
+          dotnet pack src/observability/Jnvp.Platform.Observability/Jnvp.Platform.Observability.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output nupkgs
+          -p:PackageVersion="${GITHUB_REF_NAME#v}"
+
+      - name: Publish
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "$NUGET_API_KEY" ]; then
+            echo "NUGET_API_KEY secret is required." >&2
+            exit 1
+          fi
+          dotnet nuget push nupkgs/*.nupkg \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate
