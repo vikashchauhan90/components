@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/compression/">
+    <Project Path="src/compression/Jnvp.Platform.Compression/Jnvp.Platform.Compression.csproj" Id="b34ec914-5006-479e-ac78-8d666b4fd41c" />
+  </Folder>
   <Folder Name="/src/observability/">
     <Project Path="src/observability/Jnvp.Platform.Observability/Jnvp.Platform.Observability.csproj" Id="973e39e9-3ac4-4dbc-a624-e9f87b5ff49f" />
   </Folder>
