@@ -42,5 +42,7 @@ internal static class SerializationDiagnostics
         activity?.SetStatus(
             ActivityStatusCode.Error,
             exception.Message);
+
+        activity?.AddException(exception);
     }
 }
