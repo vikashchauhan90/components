@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="MessagePack" Version="3.1.12" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="11.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="11.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Options" Version="11.0.0" />
+		<PackageReference Include="ZiggyCreatures.FusionCache" Version="2.9.0" />
+		<PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.9.0" />
+		<PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NeueccMessagePack" Version="2.9.0" />
+		<PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" Version="2.9.0" />
+		<PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.14" />
+		
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Distributed\" />
+	</ItemGroup>
+	
+</Project>
