@@ -14,13 +14,7 @@
 /// </remarks>
 /// <example>
 /// <code language="csharp">
-/// await cacheProvider.SetStringAsync(
-///     "user:123",
-///     json,
-///     new CacheEntryOptions
-///     {
-///         Tags = [ "users" ]
-///     });
+/// await cacheProvider.SetStringAsync("user:123", json);
 ///
 /// string? value = await cacheProvider.GetStringAsync(
 ///     "user:123");
@@ -40,9 +34,6 @@ public interface ICacheProvider
     /// <param name="value">
     /// The string value to cache.
     /// </param>
-    /// <param name="options">
-    /// Optional settings that control cache behavior.
-    /// </param>
     /// <param name="cancellationToken">
     /// A token used to cancel the operation.
     /// </param>
@@ -52,7 +43,6 @@ public interface ICacheProvider
     ValueTask SetStringAsync(
         string key,
         string value,
-        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -80,9 +70,6 @@ public interface ICacheProvider
     /// <param name="value">
     /// The binary data to cache.
     /// </param>
-    /// <param name="options">
-    /// Optional settings that control cache behavior.
-    /// </param>
     /// <param name="cancellationToken">
     /// A token used to cancel the operation.
     /// </param>
@@ -92,7 +79,6 @@ public interface ICacheProvider
     ValueTask SetBytesAsync(
         string key,
         ReadOnlyMemory<byte> value,
-        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -120,9 +106,6 @@ public interface ICacheProvider
     /// <param name="value">
     /// The stream containing data to cache.
     /// </param>
-    /// <param name="options">
-    /// Optional settings that control cache behavior.
-    /// </param>
     /// <param name="cancellationToken">
     /// A token used to cancel the operation.
     /// </param>
@@ -132,7 +115,6 @@ public interface ICacheProvider
     ValueTask SetStreamAsync(
         string key,
         Stream value,
-        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

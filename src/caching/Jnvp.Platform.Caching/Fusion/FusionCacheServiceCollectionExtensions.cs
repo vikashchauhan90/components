@@ -1,5 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace Jnvp.Platform.Caching.Fusion;
@@ -10,11 +11,30 @@ namespace Jnvp.Platform.Caching.Fusion;
 /// </summary>
 public static class FusionCacheServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers the default FusionCache instance and the platform cache
+    /// provider.
+    /// </summary>
+    /// <param name="services">The service collection to add caching services to.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddFusionCaching(
         this IServiceCollection services)
     {
-        services.AddFusionCache();
+        ArgumentNullException.ThrowIfNull(services);
 
+        services.AddFusionCache()
+            .TryWithAutoSetup();
+
+        services
+            .AddOptions<CacheEntryOptions>()
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<
+                IValidateOptions<CacheEntryOptions>,
+                CacheEntryOptionsValidator>());
         services.TryAddSingleton<
             ICacheProvider,
             FusionCacheProvider>();
@@ -22,14 +42,34 @@ public static class FusionCacheServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Registers FusionCache and configures its options.
+    /// </summary>
+    /// <param name="services">The service collection to add caching services to.</param>
+    /// <param name="configure">A delegate that configures FusionCache options.</param>
+    /// <returns>The same <paramref name="services"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="configure"/>
+    /// is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddFusionCaching(
         this IServiceCollection services,
         Action<FusionCacheOptions> configure)
     {
-        services.AddFusionCache();
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
 
-        services.Configure(configure);
+        services.AddFusionCache()
+            .WithOptions(configure)
+            .TryWithAutoSetup();
 
+        services
+            .AddOptions<CacheEntryOptions>()
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<
+                IValidateOptions<CacheEntryOptions>,
+                CacheEntryOptionsValidator>());
         services.TryAddSingleton<
             ICacheProvider,
             FusionCacheProvider>();

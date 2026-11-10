@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Jnvp.Platform.Caching.Memory;
 
@@ -33,6 +34,11 @@ public static class MemoryCacheServiceCollectionExtensions
     /// <see cref="ICacheProvider"/> using <see cref="MemoryCacheProvider"/>.
     /// </description>
     /// </item>
+    /// <item>
+    /// <description>
+    /// A singleton tag store for group invalidation.
+    /// </description>
+    /// </item>
     /// </list>
     ///
     /// <para>
@@ -45,11 +51,24 @@ public static class MemoryCacheServiceCollectionExtensions
     /// services.AddMemoryCaching();
     /// </code>
     /// </example>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddMemoryCaching(
         this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         services.AddMemoryCache();
 
+        services.TryAddSingleton<ITagStore, MemoryTagStore>();
+        services
+            .AddOptions<CacheEntryOptions>()
+            .ValidateOnStart();
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<
+                IValidateOptions<CacheEntryOptions>,
+                CacheEntryOptionsValidator>());
         services.TryAddSingleton<
             ICacheProvider,
             MemoryCacheProvider>();
@@ -80,10 +99,17 @@ public static class MemoryCacheServiceCollectionExtensions
     /// });
     /// </code>
     /// </example>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or
+    /// <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
     public static IServiceCollection AddMemoryCaching(
         this IServiceCollection services,
         Action<MemoryCacheOptions> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
         services.AddMemoryCaching();
 
         services.Configure(configure);

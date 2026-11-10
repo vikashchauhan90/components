@@ -6,6 +6,8 @@
 /// <remarks>
 /// Cache entry options can be used to configure expiration policies and
 /// associate cache entries with one or more tags for group invalidation.
+/// Memory and distributed providers support both expiration settings; the
+/// FusionCache provider supports absolute expiration but not sliding expiration.
 ///
 /// <para>
 /// Expiration settings are optional. When neither
@@ -14,27 +16,8 @@
 /// is determined by the underlying cache provider.
 /// </para>
 /// </remarks>
-/// <example>
-/// <code language="csharp">
-/// await cacheProvider.SetStringAsync(
-///     "user:123",
-///     json,
-///     new CacheEntryOptions
-///     {
-///         AbsoluteExpirationRelativeToNow =
-///             TimeSpan.FromHours(1),
-///
-///         SlidingExpiration =
-///             TimeSpan.FromMinutes(15),
-///
-///         Tags =
-///         [
-///             "users",
-///             "user:123"
-///         ]
-///     });
-/// </code>
-/// </example>
+/// Configure this type through dependency injection to set cache-entry
+/// behavior for the registered provider.
 public sealed class CacheEntryOptions
 {
     /// <summary>
@@ -78,17 +61,6 @@ public sealed class CacheEntryOptions
     /// together using tag-based invalidation operations such as
     /// <c>InvalidateTagAsync</c>.
     /// </remarks>
-    /// <example>
-    /// <code language="csharp">
-    /// var options = new CacheEntryOptions
-    /// {
-    ///     Tags =
-    ///     [
-    ///         "products",
-    ///         "category:electronics"
-    ///     ]
-    /// };
-    /// </code>
-    /// </example>
     public IReadOnlyCollection<string>? Tags { get; set; }
+
 }
