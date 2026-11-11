@@ -9,7 +9,7 @@ All packages target .NET 10 (`net10.0`).
 
 | NuGet package | Purpose | Documentation |
 | --- | --- | --- |
-| `Jnvp.Platform.Caching` | Memory, distributed, Redis, and FusionCache providers | [Caching README](src/caching/README.md) |
+| `Jnvp.Platform.Caching` | Redis-backed FusionCache provider | [Caching README](src/caching/README.md) |
 | `Jnvp.Platform.Compression` | GZip, Brotli, and Deflate compression | [Compression README](src/compression/README.md) |
 | `Jnvp.Platform.Observability` | OpenTelemetry logging, metrics, tracing, and redaction | [Observability README](src/observability/README.md) |
 | `Jnvp.Platform.Results` | Typed results, errors, and exception types | [Results README](src/result/README.md) |

@@ -4,17 +4,20 @@
 /// Provides methods for storing, retrieving, and invalidating cached data.
 /// </summary>
 /// <remarks>
-/// Implementations may use in-memory, distributed, or external cache
-/// providers such as Memory Cache, Redis, or custom cache stores.
+/// The platform implementation is backed by FusionCache and is configured
+/// with Redis for distributed storage and backplane synchronization.
 ///
 /// <para>
-/// Cached entries may optionally be associated with one or more tags,
-/// allowing related entries to be invalidated as a group.
+/// Entries can optionally be associated with FusionCache tags, allowing
+/// related entries to be invalidated as a group across application instances.
 /// </para>
 /// </remarks>
 /// <example>
 /// <code language="csharp">
-/// await cacheProvider.SetStringAsync("user:123", json);
+/// await cacheProvider.SetStringAsync(
+///     "user:123",
+///     json,
+///     options: new CacheEntryOptions { Tags = ["users"] });
 ///
 /// string? value = await cacheProvider.GetStringAsync(
 ///     "user:123");
@@ -34,6 +37,9 @@ public interface ICacheProvider
     /// <param name="value">
     /// The string value to cache.
     /// </param>
+    /// <param name="options">
+    /// Optional per-entry expiration and FusionCache tags.
+    /// </param>
     /// <param name="cancellationToken">
     /// A token used to cancel the operation.
     /// </param>
@@ -43,6 +49,7 @@ public interface ICacheProvider
     ValueTask SetStringAsync(
         string key,
         string value,
+        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -70,6 +77,9 @@ public interface ICacheProvider
     /// <param name="value">
     /// The binary data to cache.
     /// </param>
+    /// <param name="options">
+    /// Optional per-entry expiration and FusionCache tags.
+    /// </param>
     /// <param name="cancellationToken">
     /// A token used to cancel the operation.
     /// </param>
@@ -79,6 +89,7 @@ public interface ICacheProvider
     ValueTask SetBytesAsync(
         string key,
         ReadOnlyMemory<byte> value,
+        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -94,43 +105,6 @@ public interface ICacheProvider
     /// The cached binary data if found; otherwise, <see langword="null"/>.
     /// </returns>
     ValueTask<byte[]?> GetBytesAsync(
-        string key,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Stores data from a stream in the cache.
-    /// </summary>
-    /// <param name="key">
-    /// The unique cache key.
-    /// </param>
-    /// <param name="value">
-    /// The stream containing data to cache.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token used to cancel the operation.
-    /// </param>
-    /// <returns>
-    /// A task that represents the asynchronous cache operation.
-    /// </returns>
-    ValueTask SetStreamAsync(
-        string key,
-        Stream value,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Retrieves cached data as a stream.
-    /// </summary>
-    /// <param name="key">
-    /// The unique cache key.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token used to cancel the operation.
-    /// </param>
-    /// <returns>
-    /// A stream containing the cached data if found; otherwise,
-    /// <see langword="null"/>.
-    /// </returns>
-    ValueTask<Stream?> GetStreamAsync(
         string key,
         CancellationToken cancellationToken = default);
 

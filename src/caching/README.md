@@ -1,13 +1,20 @@
 # Jnvp.Platform.Caching
 
-`Jnvp.Platform.Caching` provides a common asynchronous cache interface with
-in-memory, `IDistributedCache`, Redis, and FusionCache implementations. The
-providers support string, byte, and stream values, expiration options, and
-tag-based invalidation.
+Redis-backed FusionCache integration for .NET applications. It wires
+FusionCache to Redis for distributed storage, uses a Redis backplane to
+propagate cache changes between application instances, and configures
+MessagePack serialization with LZ4 block-array compression by default.
+
+This package deliberately does not provide in-memory-only, generic
+`IDistributedCache`, or a custom Redis provider. Use FusionCache directly when
+you need its full API, including factories, tags, fail-safe behavior, and
+plugins. `ICacheProvider` is a small convenience API for string, byte, and
+byte-array values.
 
 ## Requirements
 
 - .NET 10 or later
+- A Redis deployment reachable by each application instance
 
 ## Installation
 
@@ -21,73 +28,123 @@ Or add a package reference, replacing `x.y.z` with the version you use:
 <PackageReference Include="Jnvp.Platform.Caching" Version="x.y.z" />
 ```
 
-## Quick start
+## Registration
 
-Choose and register one provider. For example, use the built-in in-memory
-provider:
+Read Redis credentials from a secret provider or environment-backed
+configuration. Use the same `instanceName` for replicas of the same
+application and environment, and a different name for each application or
+environment that shares Redis:
 
 ```csharp
 using Jnvp.Platform.Caching;
-using Jnvp.Platform.Caching.Memory;
+using Jnvp.Platform.Caching.Fusion;
 using Microsoft.Extensions.DependencyInjection;
+using ZiggyCreatures.Caching.Fusion;
 
-var services = new ServiceCollection();
-services.AddMemoryCaching();
-services.Configure<CacheEntryOptions>(options =>
-{
-    options.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10);
-    options.Tags = ["catalog"];
-});
+var redisConfiguration =
+    builder.Configuration.GetConnectionString("Redis")
+    ?? throw new InvalidOperationException(
+        "The Redis connection string is not configured.");
 
-using var serviceProvider = services.BuildServiceProvider();
-var cache = serviceProvider.GetRequiredService<ICacheProvider>();
+builder.Services.AddFusionRedisCaching(
+    redisConfiguration,
+    instanceName: "orders-production",
+    configureDefaultEntryOptions: options =>
+    {
+        options.Duration = TimeSpan.FromMinutes(5);
+        options.SetFailSafe(
+            isEnabled: true,
+            maxDuration: TimeSpan.FromHours(1),
+            throttleDuration: TimeSpan.FromSeconds(30));
+        options.SetFactoryTimeouts(
+            softTimeout: TimeSpan.FromMilliseconds(100),
+            hardTimeout: TimeSpan.FromSeconds(2));
+    });
+```
 
-await cache.SetStringAsync("catalog:42", """{"id":42}""");
+The registration configures both the StackExchange Redis distributed cache and
+FusionCache's Redis backplane. It also sets the FusionCache name and Redis key
+prefix from `instanceName`. Both Redis integrations use the provided
+connection configuration; optional callbacks let the application further
+configure the distributed cache, backplane, and FusionCache options.
+
+Set entry defaults deliberately for your data freshness and outage
+requirements. The example uses a five-minute normal duration and permits
+fail-safe data for up to one hour. Fail-safe is a data-consistency decision;
+adjust or disable it when stale values are not acceptable.
+
+## Using the convenience provider
+
+Resolve `ICacheProvider` for the common string and byte-array operations.
+Entry tags and absolute expiration are passed per write:
+
+```csharp
+var cache = app.Services.GetRequiredService<ICacheProvider>();
+
+await cache.SetStringAsync(
+    "catalog:42",
+    """{"id":42}""",
+    options: new CacheEntryOptions
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2),
+        Tags = ["catalog"]
+    });
+
 string? value = await cache.GetStringAsync("catalog:42");
 await cache.InvalidateTagAsync("catalog");
 ```
 
-For applications using Redis, register it instead:
+Tags are FusionCache's native tag feature rather than a platform-managed tag
+index. They can be used to invalidate related entries across replicas through
+the Redis backplane.
+
+For generic values, factory-based reads, or other FusionCache features, inject
+`IFusionCache` directly:
 
 ```csharp
-using Jnvp.Platform.Caching.Redis;
+var fusionCache = app.Services.GetRequiredService<IFusionCache>();
 
-services.AddRedisCaching(connectionString);
+var product = await fusionCache.GetOrSetAsync(
+    "product:42",
+    _ => Task.FromResult(new Product(42, "Example")),
+    options => options.SetDuration(TimeSpan.FromMinutes(5)),
+    tags: ["products"]);
 ```
 
-`AddRedisCaching` registers Redis as the distributed cache and wires up the
-platform provider. You can also use `AddDistributedCaching` after registering
-another `IDistributedCache` implementation, or `AddFusionCaching` to use
-FusionCache. Register only one provider per service collection; each provides
-the same `ICacheProvider` service.
+## Serialization and compression
 
-## Providers
+By default, distributed cache values use FusionCache's contractless MessagePack
+serializer with `MessagePackCompression.Lz4BlockArray`. This compresses
+serialized values before they are stored in Redis. To use different MessagePack
+resolver or compression settings, pass a configured
+`MessagePackSerializerOptions` through the `messagePackOptions` parameter.
+All application instances sharing entries must use compatible serializers and
+serialization settings; changing them can make existing Redis entries
+unreadable until they expire or are removed.
 
-- `AddMemoryCaching`: process-local cache; entries are not shared across
-  application instances.
-- `AddDistributedCaching`: uses a separately registered
-  `IDistributedCache` implementation. Register the backend first.
-- `AddRedisCaching`: configures the StackExchange.Redis distributed cache from
-  a connection string or options callback.
-- `AddFusionCaching`: registers FusionCache and its platform provider.
+## Redis and deployment notes
 
-Configure common entry settings through `CacheEntryOptions`. Absolute
-expiration, sliding expiration, and tags are supported by the memory and
-distributed providers. FusionCache supports absolute expiration; it does not
-support sliding expiration. Without an explicit expiration, the underlying
-provider determines entry lifetime.
-
-Tags allow related entries to be invalidated together. Distributed tag
-invalidation uses shared tag-version records, so instances using the same
-distributed backend observe the invalidation.
+- Use TLS and authentication as appropriate for the deployment. Supply
+  credentials through secret management, not source-controlled settings.
+- Configure Redis timeouts, certificates, and other deployment-specific
+  settings through `configureRedisCache` and `configureRedisBackplane`.
+- Use a unique `instanceName` per application/environment, but keep it
+  identical across that application's replicas.
+- Redis stores the distributed values; the backplane communicates changes
+  between local FusionCache instances. All replicas that need coherent
+  invalidation must use the same Redis deployment and cache namespace.
+- Configure FusionCache default durations, fail-safe, and factory timeouts to
+  match the application's consistency and availability requirements.
 
 ## Main API
 
-- `ICacheProvider`: asynchronous operations for setting, retrieving, and
-  removing values and invalidating tags.
-- `CacheEntryOptions`: expiration and tag settings applied to cached entries.
-- `AddMemoryCaching`, `AddDistributedCaching`, `AddRedisCaching`, and
-  `AddFusionCaching`: dependency-injection registration methods.
+- `AddFusionRedisCaching`: registers FusionCache, Redis distributed storage,
+  the Redis backplane, and the compressed MessagePack serializer.
+- `ICacheProvider`: convenience API for string and byte-array cache
+  operations and native FusionCache tag invalidation.
+- `CacheEntryOptions`: per-write absolute expiration and FusionCache tags.
+- `IFusionCache`: FusionCache's full native API, available from dependency
+  injection.
 
 ## License
 

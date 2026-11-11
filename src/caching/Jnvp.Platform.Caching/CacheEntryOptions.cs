@@ -4,20 +4,16 @@
 /// Represents configuration settings that control the behavior of a cached entry.
 /// </summary>
 /// <remarks>
-/// Cache entry options can be used to configure expiration policies and
-/// associate cache entries with one or more tags for group invalidation.
-/// Memory and distributed providers support both expiration settings; the
-/// FusionCache provider supports absolute expiration but not sliding expiration.
+/// Cache entry options can be used to configure absolute expiration and
+/// associate a FusionCache entry with one or more tags.
 ///
 /// <para>
 /// Expiration settings are optional. When neither
-/// <see cref="AbsoluteExpirationRelativeToNow"/> nor
-/// <see cref="SlidingExpiration"/> is specified, the expiration behavior
-/// is determined by the underlying cache provider.
+/// <see cref="AbsoluteExpirationRelativeToNow"/> is specified, FusionCache's
+/// configured default entry options determine the expiration behavior.
 /// </para>
 /// </remarks>
-/// Configure this type through dependency injection to set cache-entry
-/// behavior for the registered provider.
+/// Pass an instance to a cache write operation to set that entry's behavior.
 public sealed class CacheEntryOptions
 {
     /// <summary>
@@ -35,22 +31,7 @@ public sealed class CacheEntryOptions
     public TimeSpan? AbsoluteExpirationRelativeToNow { get; set; }
 
     /// <summary>
-    /// Gets or sets the amount of time a cache entry can remain inactive
-    /// before it expires.
-    /// </summary>
-    /// <value>
-    /// The sliding expiration interval, or <see langword="null"/> if
-    /// sliding expiration is not configured.
-    /// </value>
-    /// <remarks>
-    /// Each successful access resets the expiration timer.
-    /// If the entry is not accessed within the configured interval,
-    /// it becomes eligible for removal.
-    /// </remarks>
-    public TimeSpan? SlidingExpiration { get; set; }
-
-    /// <summary>
-    /// Gets or sets the tags associated with the cache entry.
+    /// Gets or sets the FusionCache tags associated with the cache entry.
     /// </summary>
     /// <value>
     /// A collection of tags, or <see langword="null"/> if no tags are
@@ -58,9 +39,7 @@ public sealed class CacheEntryOptions
     /// </value>
     /// <remarks>
     /// Tags enable multiple cache entries to be grouped and invalidated
-    /// together using tag-based invalidation operations such as
-    /// <c>InvalidateTagAsync</c>.
+    /// through FusionCache's tag invalidation support.
     /// </remarks>
     public IReadOnlyCollection<string>? Tags { get; set; }
-
 }

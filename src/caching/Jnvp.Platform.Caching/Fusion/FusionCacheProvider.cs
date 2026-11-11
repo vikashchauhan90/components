@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using ZiggyCreatures.Caching.Fusion;
 
 namespace Jnvp.Platform.Caching.Fusion;
@@ -7,19 +6,14 @@ namespace Jnvp.Platform.Caching.Fusion;
 internal sealed class FusionCacheProvider : ICacheProvider
 {
     private readonly IFusionCache cache;
-    private readonly IOptions<CacheEntryOptions> options;
     private readonly ILogger<FusionCacheProvider> logger;
 
     public FusionCacheProvider(
         IFusionCache cache,
-        IOptions<CacheEntryOptions> options,
         ILogger<FusionCacheProvider> logger)
     {
         this.cache = cache
             ?? throw new ArgumentNullException(nameof(cache));
-
-        this.options = options
-            ?? throw new ArgumentNullException(nameof(options));
 
         this.logger = logger
             ?? throw new ArgumentNullException(nameof(logger));
@@ -28,27 +22,25 @@ internal sealed class FusionCacheProvider : ICacheProvider
     public async ValueTask SetStringAsync(
         string key,
         string value,
+        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
         cancellationToken.ThrowIfCancellationRequested();
-        var entryOptions = options.Value;
+        ValidateEntryOptions(options);
 
-        using var activity =
-            CacheDiagnostics.StartSet(key);
+        using var activity = CacheDiagnostics.StartSet();
 
         try
         {
-            logger.LogTrace(
-                "Caching string value for key {Key}",
-                key);
+            logger.LogTrace("Caching string value");
 
             await cache.SetAsync(
                 key,
                 value,
-                GetEntryOptions(entryOptions),
-                tags: entryOptions.Tags,
+                GetEntryOptions(options),
+                tags: options?.Tags,
                 token: cancellationToken);
         }
         catch (Exception ex)
@@ -68,8 +60,7 @@ internal sealed class FusionCacheProvider : ICacheProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var activity =
-            CacheDiagnostics.StartGet(key);
+        using var activity = CacheDiagnostics.StartGet();
 
         try
         {
@@ -96,21 +87,22 @@ internal sealed class FusionCacheProvider : ICacheProvider
     public async ValueTask SetBytesAsync(
         string key,
         ReadOnlyMemory<byte> value,
+        CacheEntryOptions? options = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         cancellationToken.ThrowIfCancellationRequested();
-        var entryOptions = options.Value;
+        ValidateEntryOptions(options);
 
-        using var activity = CacheDiagnostics.StartSet(key);
+        using var activity = CacheDiagnostics.StartSet();
 
         try
         {
             await cache.SetAsync(
                 key,
                 value.ToArray(),
-                GetEntryOptions(entryOptions),
-                tags: entryOptions.Tags,
+                GetEntryOptions(options),
+                tags: options?.Tags,
                 token: cancellationToken);
         }
         catch (Exception ex)
@@ -127,7 +119,7 @@ internal sealed class FusionCacheProvider : ICacheProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var activity = CacheDiagnostics.StartGet(key);
+        using var activity = CacheDiagnostics.StartGet();
 
         try
         {
@@ -145,42 +137,6 @@ internal sealed class FusionCacheProvider : ICacheProvider
         }
     }
 
-    public async ValueTask SetStreamAsync(
-        string key,
-        Stream value,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        ArgumentNullException.ThrowIfNull(value);
-        cancellationToken.ThrowIfCancellationRequested();
-        using var memoryStream = new MemoryStream();
-
-        await value.CopyToAsync(
-            memoryStream,
-            cancellationToken);
-
-        await SetBytesAsync(
-            key,
-            memoryStream.ToArray(),
-            cancellationToken);
-    }
-
-    public async ValueTask<Stream?> GetStreamAsync(
-        string key,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(key);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var bytes = await GetBytesAsync(
-            key,
-            cancellationToken);
-
-        return bytes is null
-            ? null
-            : new MemoryStream(bytes);
-    }
-
     public async ValueTask RemoveAsync(
         string key,
         CancellationToken cancellationToken = default)
@@ -188,8 +144,7 @@ internal sealed class FusionCacheProvider : ICacheProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var activity =
-            CacheDiagnostics.StartRemove(key);
+        using var activity = CacheDiagnostics.StartRemove();
 
         try
         {
@@ -214,8 +169,7 @@ internal sealed class FusionCacheProvider : ICacheProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(tag);
         cancellationToken.ThrowIfCancellationRequested();
 
-        using var activity =
-            CacheDiagnostics.StartInvalidateTag(tag);
+        using var activity = CacheDiagnostics.StartInvalidateTag();
 
         try
         {
@@ -233,23 +187,36 @@ internal sealed class FusionCacheProvider : ICacheProvider
         }
     }
 
-    private static FusionCacheEntryOptions GetEntryOptions(
-        CacheEntryOptions options)
+    private FusionCacheEntryOptions? GetEntryOptions(
+        CacheEntryOptions? options)
     {
-        if (options.SlidingExpiration is not null)
+        if (options?.AbsoluteExpirationRelativeToNow is not { } expiration)
         {
-            throw new NotSupportedException(
-                "FusionCache does not support sliding expiration.");
+            return null;
         }
 
-        var result = new FusionCacheEntryOptions();
+        var entryOptions = cache.DefaultEntryOptions.Duplicate();
+        entryOptions.Duration = expiration;
+        return entryOptions;
+    }
 
-        if (options.AbsoluteExpirationRelativeToNow is not null)
+    private static void ValidateEntryOptions(
+        CacheEntryOptions? options)
+    {
+        if (options?.AbsoluteExpirationRelativeToNow is { } expiration
+            && expiration <= TimeSpan.Zero)
         {
-            result.Duration =
-                options.AbsoluteExpirationRelativeToNow.Value;
+            throw new ArgumentOutOfRangeException(
+                nameof(options),
+                "The absolute expiration must be greater than zero.");
         }
 
-        return result;
+        if (options?.Tags is not null
+            && options.Tags.Any(string.IsNullOrWhiteSpace))
+        {
+            throw new ArgumentException(
+                "Cache tags cannot be null, empty, or whitespace.",
+                nameof(options));
+        }
     }
 }

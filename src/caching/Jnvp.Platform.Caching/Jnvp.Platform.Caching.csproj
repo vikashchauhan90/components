@@ -5,8 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageId>Jnvp.Platform.Caching</PackageId>
-    <Description>Common asynchronous cache abstractions with in-memory, distributed, Redis, and FusionCache providers.</Description>
-    <PackageTags>caching;distributed-cache;redis;memory-cache;fusioncache</PackageTags>
+    <Description>Redis-backed FusionCache registration and cache provider with distributed invalidation, MessagePack serialization, and LZ4 compression.</Description>
+    <PackageTags>caching;distributed-cache;redis;fusioncache;messagepack;compression</PackageTags>
     <PackageProjectUrl>https://github.com/vikashchauhan90/components</PackageProjectUrl>
     <RepositoryUrl>https://github.com/vikashchauhan90/components</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -26,16 +26,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="MessagePack" Version="3.1.12" />
-		<PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="11.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="11.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Options" Version="11.0.0" />
 		<PackageReference Include="ZiggyCreatures.FusionCache" Version="2.9.0" />
 		<PackageReference Include="ZiggyCreatures.FusionCache.Backplane.StackExchangeRedis" Version="2.9.0" />
 		<PackageReference Include="ZiggyCreatures.FusionCache.Serialization.NeueccMessagePack" Version="2.9.0" />
-		<PackageReference Include="ZiggyCreatures.FusionCache.Serialization.SystemTextJson" Version="2.9.0" />
-		<PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.14" />
-		
 	</ItemGroup>
 
 </Project>
