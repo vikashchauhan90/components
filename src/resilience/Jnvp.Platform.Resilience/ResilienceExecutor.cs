@@ -1,4 +1,3 @@
-using Jnvp.Platform.Resilience.Abstractions;
 using Polly.Registry;
 
 namespace Jnvp.Platform.Resilience;

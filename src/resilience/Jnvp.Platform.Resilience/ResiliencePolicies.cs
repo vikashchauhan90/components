@@ -1,4 +1,4 @@
-namespace Jnvp.Platform.Resilience.Abstractions;
+namespace Jnvp.Platform.Resilience;
 
 /// <summary>Contains names used internally for resilience policies provided by this package.</summary>
 public static class ResiliencePolicies

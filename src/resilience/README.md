@@ -87,3 +87,23 @@ The policy retries HTTP request failures, timeouts, HTTP 408, HTTP 429 (honoring
 backoff with jitter, a circuit breaker, and a per-attempt timeout. Retry and
 circuit-breaker events are written through `ILogger`; the application's
 configured logging providers determine where those events are sent.
+
+## HttpClient integration
+
+For outgoing HTTP requests, register the platform `HttpClientFactory`
+resilience handler. It uses the same retry, circuit-breaker, and per-attempt
+timeout settings from `ResilienceOptions`. HTTP 429 responses are retried (and
+honor `Retry-After`) but are not counted as circuit-breaker failures:
+
+```csharp
+builder.Services.AddPlatformResilience(
+    builder.Configuration.GetSection("Resilience"));
+
+builder.Services
+    .AddHttpClient<CatalogClient>()
+    .AddPlatformResilienceHandler();
+```
+
+Add the resilience handler only once per client. Avoid wrapping a client that
+already has this handler in `IResilienceExecutor`, as nested retries and
+timeouts can multiply work and latency.

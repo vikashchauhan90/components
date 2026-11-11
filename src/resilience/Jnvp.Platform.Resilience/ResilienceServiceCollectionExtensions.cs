@@ -1,4 +1,3 @@
-using Jnvp.Platform.Resilience.Abstractions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -125,19 +124,7 @@ public static class ResilienceServiceCollectionExtensions
 
     private static IServiceCollection AddPlatformResilienceCore(IServiceCollection services)
     {
-        services
-            .AddOptions<ResilienceOptions>()
-            .Validate(
-                static options =>
-                    options.MaxRetryAttempts >= 0 &&
-                    options.RetryDelay >= TimeSpan.Zero &&
-                    options.FailureRatio is > 0 and <= 1 &&
-                    options.MinimumThroughput > 0 &&
-                    options.SamplingDuration > TimeSpan.Zero &&
-                    options.BreakDuration > TimeSpan.Zero &&
-                    options.Timeout > TimeSpan.Zero,
-                "Resilience settings must use non-negative retries and delays, a failure ratio greater than 0 and at most 1, and positive durations and throughput.")
-            .ValidateOnStart();
+        AddValidatedResilienceOptions(services);
 
         services.AddLogging();
 
@@ -160,7 +147,24 @@ public static class ResilienceServiceCollectionExtensions
         return services;
     }
 
-    private static void ConfigureHttpPipeline(
+    internal static void AddValidatedResilienceOptions(IServiceCollection services)
+    {
+        services
+            .AddOptions<ResilienceOptions>()
+            .Validate(
+                static options =>
+                    options.MaxRetryAttempts >= 0 &&
+                    options.RetryDelay >= TimeSpan.Zero &&
+                    options.FailureRatio is > 0 and <= 1 &&
+                    options.MinimumThroughput > 0 &&
+                    options.SamplingDuration > TimeSpan.Zero &&
+                    options.BreakDuration > TimeSpan.Zero &&
+                    options.Timeout > TimeSpan.Zero,
+                "Resilience settings must use non-negative retries and delays, a failure ratio greater than 0 and at most 1, and positive durations and throughput.")
+            .ValidateOnStart();
+    }
+
+    internal static void ConfigureHttpPipeline(
         ResiliencePipelineBuilder builder,
         ResilienceOptions options,
         ILogger logger)
@@ -171,46 +175,10 @@ public static class ResilienceServiceCollectionExtensions
             Delay = options.RetryDelay,
             BackoffType = DelayBackoffType.Exponential,
             UseJitter = true,
-            ShouldHandle = static args =>
-            {
-                if (args.Outcome.Exception is HttpRequestException or TimeoutRejectedException)
-                {
-                    return new ValueTask<bool>(true);
-                }
-
-                if (args.Outcome.Result is HttpResponseMessage response)
-                {
-                    return new ValueTask<bool>(
-                        response.StatusCode == HttpStatusCode.RequestTimeout ||
-                        response.StatusCode == HttpStatusCode.TooManyRequests ||
-                        (int)response.StatusCode >= (int)HttpStatusCode.InternalServerError);
-                }
-
-                return new ValueTask<bool>(false);
-            },
-            DelayGenerator = static args =>
-            {
-                if (args.Outcome.Result is not HttpResponseMessage response ||
-                    response.StatusCode != HttpStatusCode.TooManyRequests)
-                {
-                    return new ValueTask<TimeSpan?>((TimeSpan?)null);
-                }
-
-                var retryAfter = response.Headers.RetryAfter;
-                if (retryAfter?.Delta is TimeSpan delta && delta >= TimeSpan.Zero)
-                {
-                    return new ValueTask<TimeSpan?>(delta);
-                }
-
-                if (retryAfter?.Date is DateTimeOffset date)
-                {
-                    var delay = date - DateTimeOffset.UtcNow;
-                    return new ValueTask<TimeSpan?>(
-                        delay > TimeSpan.Zero ? delay : TimeSpan.Zero);
-                }
-
-                return new ValueTask<TimeSpan?>((TimeSpan?)null);
-            },
+            ShouldHandle = static args => new ValueTask<bool>(
+                ShouldRetry(args.Outcome.Exception, args.Outcome.Result as HttpResponseMessage)),
+            DelayGenerator = static args => new ValueTask<TimeSpan?>(
+                GetRetryAfterDelay(args.Outcome.Result as HttpResponseMessage)),
             OnRetry = args =>
             {
                 logger.LogWarning(
@@ -235,22 +203,8 @@ public static class ResilienceServiceCollectionExtensions
             MinimumThroughput = options.MinimumThroughput,
             SamplingDuration = options.SamplingDuration,
             BreakDuration = options.BreakDuration,
-            ShouldHandle = static args =>
-            {
-                if (args.Outcome.Exception is HttpRequestException or TimeoutRejectedException)
-                {
-                    return new ValueTask<bool>(true);
-                }
-
-                if (args.Outcome.Result is HttpResponseMessage response)
-                {
-                    return new ValueTask<bool>(
-                        response.StatusCode == HttpStatusCode.RequestTimeout ||
-                        (int)response.StatusCode >= (int)HttpStatusCode.InternalServerError);
-                }
-
-                return new ValueTask<bool>(false);
-            },
+            ShouldHandle = static args => new ValueTask<bool>(
+                ShouldBreakCircuit(args.Outcome.Exception, args.Outcome.Result as HttpResponseMessage)),
             OnOpened = _ =>
             {
                 logger.LogWarning("Resilience policy circuit breaker opened.");
@@ -269,5 +223,101 @@ public static class ResilienceServiceCollectionExtensions
         });
 
         builder.AddTimeout(options.Timeout);
+    }
+
+    internal static void ConfigureHttpPipeline(
+        ResiliencePipelineBuilder<HttpResponseMessage> builder,
+        ResilienceOptions options,
+        ILogger logger)
+    {
+        builder.AddRetry(new RetryStrategyOptions<HttpResponseMessage>
+        {
+            MaxRetryAttempts = options.MaxRetryAttempts,
+            Delay = options.RetryDelay,
+            BackoffType = DelayBackoffType.Exponential,
+            UseJitter = true,
+            ShouldHandle = static args => new ValueTask<bool>(
+                ShouldRetry(args.Outcome.Exception, args.Outcome.Result)),
+            DelayGenerator = static args => new ValueTask<TimeSpan?>(
+                GetRetryAfterDelay(args.Outcome.Result)),
+            OnRetry = args =>
+            {
+                logger.LogWarning(
+                    args.Outcome.Exception,
+                    "HTTP resilience policy retrying after attempt {AttemptNumber} in {RetryDelay}; HTTP status: {StatusCode}.",
+                    args.AttemptNumber,
+                    args.RetryDelay,
+                    (int?)args.Outcome.Result?.StatusCode);
+
+                args.Outcome.Result?.Dispose();
+                return default;
+            }
+        });
+
+        builder.AddCircuitBreaker(new CircuitBreakerStrategyOptions<HttpResponseMessage>
+        {
+            FailureRatio = options.FailureRatio,
+            MinimumThroughput = options.MinimumThroughput,
+            SamplingDuration = options.SamplingDuration,
+            BreakDuration = options.BreakDuration,
+            ShouldHandle = static args => new ValueTask<bool>(
+                ShouldBreakCircuit(args.Outcome.Exception, args.Outcome.Result)),
+            OnOpened = _ =>
+            {
+                logger.LogWarning("HTTP resilience policy circuit breaker opened.");
+                return default;
+            },
+            OnHalfOpened = _ =>
+            {
+                logger.LogInformation("HTTP resilience policy circuit breaker is half-open.");
+                return default;
+            },
+            OnClosed = _ =>
+            {
+                logger.LogInformation("HTTP resilience policy circuit breaker closed.");
+                return default;
+            }
+        });
+
+        builder.AddTimeout(options.Timeout);
+    }
+
+    private static bool ShouldRetry(
+        Exception? exception,
+        HttpResponseMessage? response) =>
+        exception is HttpRequestException or TimeoutRejectedException ||
+        response is not null &&
+        (response.StatusCode == HttpStatusCode.RequestTimeout ||
+         response.StatusCode == HttpStatusCode.TooManyRequests ||
+         (int)response.StatusCode >= (int)HttpStatusCode.InternalServerError);
+
+    private static bool ShouldBreakCircuit(
+        Exception? exception,
+        HttpResponseMessage? response) =>
+        exception is HttpRequestException or TimeoutRejectedException ||
+        response is not null &&
+        (response.StatusCode == HttpStatusCode.RequestTimeout ||
+         (int)response.StatusCode >= (int)HttpStatusCode.InternalServerError);
+
+    private static TimeSpan? GetRetryAfterDelay(HttpResponseMessage? response)
+    {
+        if (response?.StatusCode != HttpStatusCode.TooManyRequests)
+        {
+            return null;
+        }
+
+        var retryAfter = response.Headers.RetryAfter;
+        if (retryAfter?.Delta is TimeSpan delta && delta >= TimeSpan.Zero)
+        {
+            return delta;
+        }
+
+        if (retryAfter?.Date is DateTimeOffset date)
+        {
+            var delay = date - DateTimeOffset.UtcNow;
+            return delay > TimeSpan.Zero ? delay : TimeSpan.Zero;
+        }
+
+        return null;
     }
 }
