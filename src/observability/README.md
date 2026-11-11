@@ -166,4 +166,4 @@ Use `Inject` when a parent `ActivityContext` is already available, or `Extract(p
 
 ## License
 
-No license is currently declared in this repository. Confirm and add the intended license before redistributing this package publicly.
+This package is licensed under the [MIT License](https://licenses.nuget.org/MIT).

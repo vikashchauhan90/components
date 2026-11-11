@@ -4,7 +4,25 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>Jnvp.Platform.Serialization</PackageId>
+    <Description>Dependency-injection-ready JSON and MessagePack serializers for byte buffers and streams.</Description>
+    <PackageTags>serialization;json;messagepack;streams</PackageTags>
+    <PackageProjectUrl>https://github.com/vikashchauhan90/components</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/vikashchauhan90/components</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(StrongNameKeyFile)' != ''">
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(StrongNameKeyFile)</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MessagePack" Version="3.1.12" />

@@ -118,4 +118,4 @@ throw new NotFoundException("The requested order does not exist.");
 
 ## License
 
-No license is currently declared in this repository. Confirm and add the intended license before redistributing this package publicly.
+This package is licensed under the [MIT License](https://licenses.nuget.org/MIT).

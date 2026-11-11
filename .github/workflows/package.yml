@@ -55,9 +55,36 @@ jobs:
           --output nupkgs
           -p:PackageVersion="${GITHUB_REF_NAME#v}"
 
+      - name: Pack Caching
+        run: >-
+          dotnet pack src/caching/Jnvp.Platform.Caching/Jnvp.Platform.Caching.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output nupkgs
+          -p:PackageVersion="${GITHUB_REF_NAME#v}"
+
+      - name: Pack Compression
+        run: >-
+          dotnet pack src/compression/Jnvp.Platform.Compression/Jnvp.Platform.Compression.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output nupkgs
+          -p:PackageVersion="${GITHUB_REF_NAME#v}"
+
       - name: Pack Observability
         run: >-
           dotnet pack src/observability/Jnvp.Platform.Observability/Jnvp.Platform.Observability.csproj
+          --configuration Release
+          --no-build
+          --no-restore
+          --output nupkgs
+          -p:PackageVersion="${GITHUB_REF_NAME#v}"
+
+      - name: Pack Serialization
+        run: >-
+          dotnet pack src/serialization/Jnvp.Platform.Serialization/Jnvp.Platform.Serialization.csproj
           --configuration Release
           --no-build
           --no-restore
